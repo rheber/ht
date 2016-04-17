@@ -41,6 +41,8 @@ object ParseCommand extends Command {
       p match {
         case Success(CmdDelete(num), _) => tasks -= num
         case Success(CmdList("all"), _) => tasks.foreach(println)
+        case Success(CmdList(itvl), _) =>
+            tasks.filter(_._2.interval == itvl).foreach(println)
         case Success(CmdMonthly(task), _) => addTask(task, "monthly")
         case Success(CmdQuit(), _) => return
         case Success(CmdWeekly(task), _) => addTask(task, "weekly")
