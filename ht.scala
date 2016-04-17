@@ -2,14 +2,21 @@ import scala.collection.mutable.Map
 import scala.io.StdIn
 import scala.util.parsing.combinator._
 
-class Command extends JavaTokenParsers {
-  def cmd: Parser[Any] = delete|list|quit|weekly
-  def number: Parser[String] = """\d+""".r
+case class CmdDelete(num: Int)
+case class CmdList(name: String)
+case class CmdMonthly(name: String)
+case class CmdQuit()
+case class CmdWeekly(name: String)
 
-  def delete: Parser[Int] = "delete"~>number^^(_.toInt)
-  def list: Parser[String] = "list weekly"
-  def quit: Parser[String] = "quit"
-  def weekly: Parser[String] = "weekly "~>"""[^\n]+""".r
+class Command extends JavaTokenParsers {
+  def cmd: Parser[Any] = delete|list|monthly|quit|weekly
+  def number: Parser[Int] = """\d+""".r^^(_.toInt)
+
+  def delete: Parser[CmdDelete] = "delete"~>number^^CmdDelete
+  def list: Parser[CmdList] = "list "~>"""[^\n]+""".r^^CmdList
+  def monthly: Parser[CmdMonthly] = "monthly "~>"""[^\n]+""".r^^CmdMonthly
+  def quit: Parser[CmdQuit] = "quit"^^(_=>CmdQuit())
+  def weekly: Parser[CmdWeekly] = "weekly "~>"""[^\n]+""".r^^CmdWeekly
 }
 
 class Task(val name:String, val interval:String) {
@@ -32,10 +39,11 @@ object ParseCommand extends Command {
       input = StdIn.readLine()
       var p = parseAll(cmd, input)
       p match {
-        case Success("list weekly", _) => tasks.foreach(println)
-        case Success("quit", _) => return
-        case Success(num:Int, _) => tasks -= num
-        case Success(task:String, _) => addTask(task, "weekly")
+        case Success(CmdDelete(num), _) => tasks -= num
+        case Success(CmdList("all"), _) => tasks.foreach(println)
+        case Success(CmdMonthly(task), _) => addTask(task, "monthly")
+        case Success(CmdQuit(), _) => return
+        case Success(CmdWeekly(task), _) => addTask(task, "weekly")
         case _ => println("Unrecognised command")
       }
     }
