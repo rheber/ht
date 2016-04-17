@@ -12,12 +12,16 @@ class Command extends JavaTokenParsers {
   def weekly: Parser[String] = "weekly "~>"""[^\n]+""".r
 }
 
+class Task(val name:String, val interval:String) {
+  override def toString = name
+}
+
 object ParseCommand extends Command {
-  val tasks = Map[Int,String]()
+  val tasks = Map[Int,Task]()
   var nextInt = 1
 
-  def addTask(task:String) {
-    tasks += (nextInt->task)
+  def addTask(name:String, interval:String) {
+    tasks += (nextInt->new Task(name, interval))
     nextInt += 1
   }
 
@@ -31,7 +35,7 @@ object ParseCommand extends Command {
         case Success("list weekly", _) => tasks.foreach(println)
         case Success("quit", _) => return
         case Success(num:Int, _) => tasks -= num
-        case Success(task:String, _) => addTask(task)
+        case Success(task:String, _) => addTask(task, "weekly")
         case _ => println("Unrecognised command")
       }
     }
