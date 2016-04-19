@@ -32,6 +32,10 @@ object ParseCommand extends Command {
     nextInt += 1
   }
 
+  def printlnTask(task:Tuple2[Int, Task]) {
+    printf("%3d [ ] %s\n", task._1, task._2)
+  }
+
   def run() {
     var input = " "
     while(input != "") {
@@ -40,9 +44,9 @@ object ParseCommand extends Command {
       var p = parseAll(cmd, input)
       p match {
         case Success(CmdDelete(num), _) => tasks -= num
-        case Success(CmdList("all"), _) => tasks.foreach(println)
+        case Success(CmdList("all"), _) => tasks.foreach(printlnTask)
         case Success(CmdList(itvl), _) =>
-            tasks.filter(_._2.interval == itvl).foreach(println)
+            tasks.filter(_._2.interval == itvl).foreach(printlnTask)
         case Success(CmdMonthly(task), _) => addTask(task, "monthly")
         case Success(CmdQuit(), _) => return
         case Success(CmdWeekly(task), _) => addTask(task, "weekly")
