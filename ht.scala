@@ -1,16 +1,24 @@
 import scala.collection.mutable.Map
-import scala.io.StdIn
+import scala.io._
 import scala.util.parsing.combinator._
+import java.io.FileWriter
 
 case class CmdDelete(num: Int)
 case class CmdList(name: String)
 case class CmdMonthly(name: String)
 case class CmdQuit()
 case class CmdRenumber()
+case class CmdSave()
 case class CmdWeekly(name: String)
 
 class Command extends JavaTokenParsers {
-  def cmd: Parser[Any] = delete|list|monthly|quit|renumber|weekly
+  def cmd: Parser[Any] = delete|
+                         list|
+                         monthly|
+                         quit|
+                         renumber|
+                         save|
+                         weekly
   def number: Parser[Int] = """\d+""".r^^(_.toInt)
 
   def delete: Parser[CmdDelete] = "delete"~>number^^CmdDelete
@@ -18,6 +26,7 @@ class Command extends JavaTokenParsers {
   def monthly: Parser[CmdMonthly] = "monthly "~>"""[^\n]+""".r^^CmdMonthly
   def quit: Parser[CmdQuit] = "quit"^^(_=>CmdQuit())
   def renumber: Parser[CmdRenumber] = "renumber"^^(_=>CmdRenumber())
+  def save: Parser[CmdSave] = "save"^^(_=>CmdSave())
   def weekly: Parser[CmdWeekly] = "weekly "~>"""[^\n]+""".r^^CmdWeekly
 }
 
@@ -45,8 +54,23 @@ object ParseCommand extends Command {
     tasks = newTasks
   }
 
+  def loadTasks() {
+    try {
+      val f = Source.fromFile("./habits")
+    } catch {
+      case _ : Throwable => ; // no saved habits
+    }
+  }
+
+  def saveTasks() {
+    val f = new FileWriter("./habits")
+    tasks.foreach(x=>f.write("%s\t%s\n".format(x._2.name, x._2.interval)))
+    f.close()
+  }
+
   def run() {
     var input = " "
+    loadTasks()
     while(input != "") {
       print("ht> ")
       input = StdIn.readLine()
@@ -59,6 +83,7 @@ object ParseCommand extends Command {
         case Success(CmdMonthly(task), _) => addTask(task, "monthly", tasks)
         case Success(CmdQuit(), _) => return
         case Success(CmdRenumber(), _) => renumberTasks()
+        case Success(CmdSave(), _) => saveTasks()
         case Success(CmdWeekly(task), _) => addTask(task, "weekly", tasks)
         case _ => println("Unrecognised command")
       }
