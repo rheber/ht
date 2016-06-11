@@ -1,5 +1,6 @@
 import scala.collection.mutable.Map
 import scala.io._
+import scala.util.matching.Regex
 import scala.util.parsing.combinator._
 import java.io.FileWriter
 
@@ -55,8 +56,16 @@ object ParseCommand extends Command {
   }
 
   def loadTasks() {
+    def loadTask(line:String) {
+      val habit = "(.+)\t(.+)".r
+      line match {
+        case habit(name, interval) => addTask(name, interval, tasks)
+      }
+    }
+
     try {
       val f = Source.fromFile("./habits")
+      f.getLines().foreach(line=>loadTask(line))
     } catch {
       case _ : Throwable => ; // no saved habits
     }
