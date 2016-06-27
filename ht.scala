@@ -3,6 +3,7 @@ import scala.io._
 import scala.util.matching.Regex
 import scala.util.parsing.combinator._
 import java.io.FileWriter
+import java.util.Date
 
 case class CmdDelete(num: Int)
 case class CmdHelp()
@@ -37,8 +38,9 @@ class Command extends JavaTokenParsers {
   def weekly: Parser[CmdWeekly] = "weekly "~>"""[^\n]+""".r^^CmdWeekly
 }
 
-class Task(val name:String, val interval:String) {
+class Task(val name:String, val interval:String, var date:Date) {
   override def toString = name
+  def this(name:String, interval:String) = this(name, interval, new Date())
 }
 
 object ParseCommand extends Command {
@@ -48,6 +50,12 @@ object ParseCommand extends Command {
 
   def addTask(name:String, interval:String, tasks:Map[Int, Task]) {
     tasks += (nextInt->new Task(name, interval))
+    nextInt += 1
+    modified = true
+  }
+
+  def addTask(name:String, interval:String, date:String, tasks:Map[Int, Task]) {
+    tasks += (nextInt->new Task(name, interval, new Date(date.toLong)))
     nextInt += 1
     modified = true
   }
@@ -85,9 +93,9 @@ object ParseCommand extends Command {
 
   def loadTasks() {
     def loadTask(line:String) {
-      val habit = "(.+)\t(.+)".r
+      val habit = "(.+)\t(.+)\t(.+)".r
       line match {
-        case habit(name, interval) => addTask(name, interval, tasks)
+        case habit(name, interval, date) => addTask(name, interval, date, tasks)
       }
     }
 
@@ -106,7 +114,8 @@ object ParseCommand extends Command {
 
   def saveTasks() {
     val f = new FileWriter("./habits")
-    tasks.foreach(x=>f.write("%s\t%s\n".format(x._2.name, x._2.interval)))
+    tasks.foreach(x=>f.write(
+        "%s\t%s\t%d\n".format(x._2.name, x._2.interval, x._2.date.getTime())))
     f.close()
     modified = false
   }
