@@ -112,7 +112,7 @@ object ParseCommand extends Command {
         case Success(CmdRenumber(), _) => renumberTasks()
         case Success(CmdSave(), _) => saveTasks()
         case Success(CmdWeekly(task), _) => addTask(task, "weekly", tasks)
-        case _ => println("Unrecognised command")
+        case _ => println("Unrecognised/incomplete command")
       }
     }
   }
