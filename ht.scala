@@ -5,6 +5,7 @@ import scala.util.parsing.combinator._
 import java.io.FileWriter
 
 case class CmdDelete(num: Int)
+case class CmdHelp()
 case class CmdList(name: String)
 case class CmdMonthly(name: String)
 case class CmdQuit()
@@ -15,6 +16,7 @@ case class CmdWeekly(name: String)
 
 class Command extends JavaTokenParsers {
   def cmd: Parser[Any] = delete|
+                         help|
                          list|
                          monthly|
                          quit|
@@ -25,6 +27,7 @@ class Command extends JavaTokenParsers {
   def number: Parser[Int] = """\d+""".r^^(_.toInt)
 
   def delete: Parser[CmdDelete] = "delete"~>number^^CmdDelete
+  def help: Parser[CmdHelp] = "help"^^(_=>CmdHelp())
   def list: Parser[CmdList] = "list "~>"""[^\n]+""".r^^CmdList
   def monthly: Parser[CmdMonthly] = "monthly "~>"""[^\n]+""".r^^CmdMonthly
   def quit: Parser[CmdQuit] = "quit!"^^(_=>CmdQuit())
@@ -52,6 +55,21 @@ object ParseCommand extends Command {
   def deleteTask(num:Int) {
     tasks -= num
     modified = true
+  }
+
+  def helpMessage() {
+    println()
+    println("Commands:")
+    println("delete <task number>\tDelete task")
+    println("help\t\t\tDisplay this message")
+    println("list all/monthly/weekly\tList tasks in specified category")
+    println("monthly <task name>\tAdd new monthly task")
+    println("quit\t\t\tQuit if there are no unsaved changes")
+    println("quit!\t\t\tQuit without saving")
+    println("renumber\t\tReset task numbering (happens automatically on exit)")
+    println("save\t\t\tSave any changes")
+    println("weekly <task name>\tAdd new weekly task")
+    println()
   }
 
   def printlnTask(task:Tuple2[Int, Task]) {
@@ -103,6 +121,7 @@ object ParseCommand extends Command {
       var p = parseAll(cmd, input)
       p match {
         case Success(CmdDelete(num), _) => deleteTask(num)
+        case Success(CmdHelp(), _) => helpMessage()
         case Success(CmdList("all"), _) => tasks.foreach(printlnTask)
         case Success(CmdList(itvl), _) =>
             tasks.filter(_._2.interval == itvl).foreach(printlnTask)
