@@ -5,9 +5,12 @@ import scala.util.parsing.combinator._
 import java.io.FileWriter
 import java.util.Date
 
+val MS_PER_DAY:Long = 1000*60*60*24
+
 case class CmdDelete(num: Int)
 case class CmdHelp()
 case class CmdList(name: String)
+case class CmdMark(num: Int)
 case class CmdMonthly(name: String)
 case class CmdQuit()
 case class CmdSafeQuit()
@@ -19,6 +22,7 @@ class Command extends JavaTokenParsers {
   def cmd: Parser[Any] = delete|
                          help|
                          list|
+                         mark|
                          monthly|
                          quit|
                          safequit|
@@ -30,6 +34,7 @@ class Command extends JavaTokenParsers {
   def delete: Parser[CmdDelete] = "delete"~>number^^CmdDelete
   def help: Parser[CmdHelp] = "help"^^(_=>CmdHelp())
   def list: Parser[CmdList] = "list "~>"""[^\n]+""".r^^CmdList
+  def mark: Parser[CmdMark] = "mark"~>number^^CmdMark
   def monthly: Parser[CmdMonthly] = "monthly "~>"""[^\n]+""".r^^CmdMonthly
   def quit: Parser[CmdQuit] = "quit!"^^(_=>CmdQuit())
   def safequit: Parser[CmdSafeQuit] = "quit"^^(_=>CmdSafeQuit())
@@ -71,6 +76,7 @@ object ParseCommand extends Command {
     println("delete <task number>\tDelete task")
     println("help\t\t\tDisplay this message")
     println("list all/monthly/weekly\tList tasks in specified category")
+    println("mark <task number>\tMark task as having been done recently")
     println("monthly <task name>\tAdd new monthly task")
     println("quit\t\t\tQuit if there are no unsaved changes")
     println("quit!\t\t\tQuit without saving")
@@ -80,8 +86,24 @@ object ParseCommand extends Command {
     println()
   }
 
+  def markTask(num:Int) {
+    var task = tasks(num)
+    val today = new Date().getTime()
+    if(task.interval=="weekly") {
+      task.date = new Date(7*MS_PER_DAY+today)
+    } else if(task.interval=="monthly") {
+      task.date = new Date(30*MS_PER_DAY+today)
+    }
+    modified = true
+  }
+
+  def isMarked(task:Task):Boolean = {
+    val today = new Date().getTime()
+    return task.date.getTime() > today
+  }
+
   def printlnTask(task:Tuple2[Int, Task]) {
-    printf("%3d [ ] %s\n", task._1, task._2)
+    printf("%3d [%s] %s\n", task._1, if(isMarked(task._2)) "X" else " ", task._2)
   }
 
   def renumberTasks() {
@@ -134,6 +156,7 @@ object ParseCommand extends Command {
         case Success(CmdList("all"), _) => tasks.foreach(printlnTask)
         case Success(CmdList(itvl), _) =>
             tasks.filter(_._2.interval == itvl).foreach(printlnTask)
+        case Success(CmdMark(num), _) => markTask(num)
         case Success(CmdMonthly(task), _) => addTask(task, "monthly", tasks)
         case Success(CmdQuit(), _) => return
         case Success(CmdSafeQuit(), _) => safeQuit()
