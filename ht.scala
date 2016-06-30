@@ -65,6 +65,10 @@ object ParseCommand extends Command {
     modified = true
   }
 
+  def announcements() {
+    tasks.foreach(x=>if(isUrgent(x._2)) printf("Outstanding task: %s\n", x._2))
+  }
+
   def deleteTask(num:Int) {
     tasks -= num
     modified = true
@@ -100,6 +104,15 @@ object ParseCommand extends Command {
   def isMarked(task:Task):Boolean = {
     val today = new Date().getTime()
     return task.date.getTime() > today
+  }
+
+  def isUrgent(task:Task):Boolean = {
+    val now = new Date().getTime()
+    if(task.interval=="weekly") {
+      return 7*MS_PER_DAY+task.date.getTime() < now
+    } else {
+      return 30*MS_PER_DAY+task.date.getTime() < now
+    }
   }
 
   def printlnTask(task:Tuple2[Int, Task]) {
@@ -146,6 +159,7 @@ object ParseCommand extends Command {
     var input = " "
     loadTasks()
     modified = false // because loadTasks calls addTasks
+    announcements()
     while(input != "") {
       print("ht> ")
       input = StdIn.readLine()
